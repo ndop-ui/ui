@@ -1,13 +1,11 @@
 import { booleanAttribute, computed, Directive, input } from '@angular/core';
 import {
   NdMenuContent,
-  NdMenuGroup,
   NdMenuItem,
   NdMenuItemCheckbox,
   NdMenuItemIndicator,
   NdMenuItemRadio,
   NdMenuLabel,
-  NdMenuRadioGroup,
   NdMenuSeparator,
   NdMenuSubTrigger,
 } from '@ndop/primitives/menu';
@@ -96,7 +94,7 @@ export class MenubarContent {
 
   protected readonly classes = computed(() =>
     cn(
-      'z-50 min-w-[12rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md data-[side=bottom]:slide-in-from-top-2 data-[side=start]:slide-in-from-end-2 data-[side=end]:slide-in-from-start-2 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95',
+      'z-50 min-w-[12rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md data-[side=bottom]:slide-in-from-top-2 data-[side=start]:slide-in-from-end-2 data-[side=end]:slide-in-from-start-2 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95',
       this.class(),
     ),
   );
@@ -127,22 +125,6 @@ export class MenubarSubContent {
     ),
   );
 }
-
-/**
- * Groups related items (`role="group"`). Name it with `aria-labelledby`
- * pointing at a label.
- *
- * @example
- * ```html
- * <div ndMenubarGroup aria-labelledby="account">…</div>
- * ```
- */
-@Directive({
-  selector: '[ndMenubarGroup]',
-  hostDirectives: [NdMenuGroup],
-  host: { 'data-slot': 'menubar-group' },
-})
-export class MenubarGroup {}
 
 /**
  * One action (`role="menuitem"`): activating it emits `triggered` and
@@ -215,28 +197,6 @@ export class MenubarCheckboxItem {
     ),
   );
 }
-
-/**
- * Groups radio items (`role="group"`) and holds the checked value, bound
- * with `[(value)]`.
- *
- * @example
- * ```html
- * <div ndMenubarRadioGroup aria-label="Panel position" [(value)]="position">…</div>
- * ```
- */
-@Directive({
-  selector: '[ndMenubarRadioGroup]',
-  hostDirectives: [
-    {
-      directive: NdMenuRadioGroup,
-      inputs: ['value'],
-      outputs: ['valueChange'],
-    },
-  ],
-  host: { 'data-slot': 'menubar-radio-group' },
-})
-export class MenubarRadioGroup {}
 
 /**
  * One choice of a radio group (`role="menuitemradio"`). Put an indicator

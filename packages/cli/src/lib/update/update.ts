@@ -43,6 +43,8 @@ import { newTypeErrors } from './typecheck';
 import {
   codemodsBetween,
   renameExports,
+  moveExports,
+  nativeDialogs,
   renameInlineInputs,
   renameInputs,
   type AngularCompiler,
@@ -538,8 +540,18 @@ async function planItem(
   const base = (await baseOf(pristine, { ...ref, version: entry.version }))
     ?.item;
   await planStyles(builder, context, base, target.item);
-  builder.depend(target.item.dependencies ?? []);
-  builder.depend(target.item.devDependencies ?? [], true);
+  // A newly required range must replace an installed older package too;
+  // name-only dependency checks would leave native markup on 1.x runtimes.
+  for (const dev of [false, true]) {
+    const field = dev ? 'devDependencies' : 'dependencies';
+    const previous = new Map(
+      (base?.[field] ?? []).map((spec) => [dependencyName(spec), spec]),
+    );
+    for (const spec of target.item[field] ?? []) {
+      const name = dependencyName(spec);
+      builder.depend([spec], dev, spec !== name && previous.get(name) !== spec);
+    }
+  }
   const kept = new Set(
     [
       ...(target.item.dependencies ?? []),
@@ -612,8 +624,17 @@ async function planCodemods(
   const ran: (Codemod & { files: string[] })[] = [];
   for (const codemod of run.codemods) {
     const compiler =
-      codemod.kind === 'rename-input' ? await run.compiler() : undefined;
-    if (codemod.kind === 'rename-input' && !compiler) {
+      codemod.kind === 'rename-input' || codemod.kind === 'native-dialog'
+        ? await run.compiler()
+        : undefined;
+    if (
+      (codemod.kind === 'rename-input' || codemod.kind === 'native-dialog') &&
+      !compiler
+    ) {
+      if (codemod.kind === 'native-dialog')
+        throw new CliError(
+          'Install @angular/compiler in the project before updating native dialogs. No files have been written.',
+        );
       builder.warn(
         `Couldn't load @angular/compiler, so rename the ${codemod.from} input to ${codemod.to} on ${codemod.selector} in your templates yourself.`,
       );
@@ -624,14 +645,20 @@ async function planCodemods(
       const text = await builder.read(path);
       if (text === undefined) continue;
       const next =
-        codemod.kind === 'rename-export'
+        codemod.kind === 'rename-export' || codemod.kind === 'move-export'
           ? path.endsWith('.ts')
-            ? renameExports(context, path, text, modules, [codemod])
+            ? codemod.kind === 'move-export'
+              ? moveExports(context, path, text, modules, [codemod])
+              : renameExports(context, path, text, modules, [codemod])
             : text
           : compiler && path.endsWith('.ts')
             ? renameInlineInputs(compiler, path, text, [codemod])
             : compiler
-              ? renameInputs(compiler, text, [codemod])
+              ? nativeDialogs(
+                  compiler,
+                  renameInputs(compiler, text, [codemod]),
+                  [codemod],
+                )
               : text;
       if (next !== text) {
         await builder.stage(path, next, { format: false });
