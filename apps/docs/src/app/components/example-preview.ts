@@ -17,8 +17,12 @@ import { StaticHtml } from '../site/static-html';
       class="not-prose overflow-hidden rounded-xl border"
       [attr.aria-label]="title()"
     >
+      <!-- The example's own element is a full-width, centred column, so a
+           width like the slider's w-3/5 or a card's w-full max-w-sm
+           resolves against the preview, as in shadcn/ui's, instead of
+           against an element shrunk to its content. -->
       <div
-        class="flex min-h-[350px] items-center justify-center bg-background p-10 text-foreground"
+        class="flex min-h-[350px] items-center justify-center bg-background p-10 text-foreground *:flex *:w-full *:flex-col *:items-center"
       >
         @if (component(); as type) {
           @defer (on immediate; hydrate on viewport) {
